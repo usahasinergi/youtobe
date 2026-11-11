@@ -27,6 +27,7 @@ for delete to authenticated using (public.is_campaign_admin());
 
 drop policy if exists "Users request own withdrawals" on public.reward_withdrawals;
 drop policy if exists "Admins review withdrawals" on public.reward_withdrawals;
+drop policy if exists "Users read own withdrawals; admins read all" on public.reward_withdrawals;
 grant select on public.reward_withdrawals to authenticated;
 revoke insert, update, delete on public.reward_withdrawals from authenticated;
 create policy "Users read own withdrawals; admins read all" on public.reward_withdrawals
