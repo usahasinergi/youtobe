@@ -32,8 +32,12 @@
   <div style="display:flex;justify-content:flex-end;gap:8px"><button type="button" class="btn" onclick="closeAccountEdit()">Batal</button><button type="submit" class="btn primary" id="saveAccountEditBtn">Simpan perubahan</button></div>
  </form>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+(()=>{const show=m=>{const e=document.getElementById('authError');if(e)e.textContent=m};window.addEventListener('error',e=>{if(!window.__kubangytReady)show('Aplikasi gagal dimuat: '+(e.message||'kesalahan JavaScript'))});window.addEventListener('unhandledrejection',e=>{if(!window.__kubangytReady)show('Aplikasi gagal dimuat: '+(e.reason?.message||String(e.reason||'kesalahan proses')))});document.getElementById('authForm')?.addEventListener('submit',()=>{show('Memeriksa kesiapan aplikasi...');setTimeout(()=>{if(!window.__kubangytReady)show('Komponen login belum berhasil dimuat. Muat ulang halaman; jika tetap terjadi, kirimkan pesan ini kepada admin.')},1500)},true)})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
+<script>
+if(!window.supabase?.createClient){const e=document.getElementById('authError');if(e)e.textContent='Library koneksi Supabase tidak berhasil dimuat. Periksa koneksi internet atau pemblokir CDN, lalu muat ulang halaman.';throw new Error('Supabase JavaScript SDK tidak tersedia')}
 const SUPABASE_URL='https://kkxlwwxsmdyjoggydgjo.supabase.co';
 const SUPABASE_KEY='sb_publishable_hLbAlzcP0G3pdvocrNoIag_lITdhU1n';
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
@@ -43,6 +47,7 @@ const $=id=>document.getElementById(id);
 function authMessage(s){$('authError').textContent=s||''}
 $('authSwitch').onclick=()=>{registerMode=!registerMode;$('authTitle').textContent=registerMode?'Buat akun KubangYT':'Masuk ke KubangYT';$('authDesc').textContent=registerMode?'Daftarkan email untuk membuat workspace pribadi.':'Gunakan akun Anda untuk membuka workspace.';$('authSubmit').textContent=registerMode?'Daftar':'Masuk';$('authSwitch').textContent=registerMode?'Sudah punya akun? Masuk':'Belum punya akun? Daftar';$('authPassword').autocomplete=registerMode?'new-password':'current-password';authMessage('')};
 $('authForm').addEventListener('submit',async e=>{e.preventDefault();authMessage('Memproses...');$('authSubmit').disabled=true;try{let email=$('authEmail').value.trim(),password=$('authPassword').value;let res=registerMode?await db.auth.signUp({email,password}):await db.auth.signInWithPassword({email,password});if(res.error)throw res.error;if(registerMode&&!res.data.session){authMessage('Pendaftaran berhasil. Periksa email untuk konfirmasi, lalu masuk.');return}await boot()}catch(err){authMessage(err.message||'Tidak dapat memproses autentikasi.')}finally{$('authSubmit').disabled=false}});
+window.__kubangytReady=true;
 async function boot(){const {data:s,error}=await db.auth.getSession();if(error)throw error;user=s.session?.user||null;if(!user){$('authGate').style.display='grid';$('workspace').style.display='none';return}$('authGate').style.display='none';$('workspace').style.display='grid';await loadAll();if(s.session?.provider_token)syncYoutubeChannels(s.session.provider_token).catch(showYoutubeError)}
 db.auth.onAuthStateChange((_event,session)=>{user=session?.user||null;if(!user){$('authGate').style.display='grid';$('workspace').style.display='none';return}$('authGate').style.display='none';$('workspace').style.display='grid';const providerToken=session?.provider_token||null;setTimeout(()=>{if(!user)return;loadAll().then(()=>{if(providerToken)syncYoutubeChannels(providerToken).catch(showYoutubeError)}).catch(showError)},0)});
 function showError(e){alert('Kesalahan database: '+(e.message||e))}
