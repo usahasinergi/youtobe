@@ -41,6 +41,13 @@ create trigger on_auth_user_created_campaign_profile
 after insert on auth.users
 for each row execute function public.handle_new_auth_user();
 
+-- Backfill existing accounts without changing their authentication records.
+insert into public.profiles (id, display_name)
+select id, coalesce(raw_user_meta_data ->> 'full_name', raw_user_meta_data ->> 'name')
+from auth.users on conflict (id) do nothing;
+insert into public.user_roles (user_id, role)
+select id, 'participant' from auth.users on conflict do nothing;
+
 create or replace function public.is_campaign_admin()
 returns boolean language sql stable security definer set search_path = '' as $$
   select exists (
@@ -322,7 +329,7 @@ grant select on public.user_roles to authenticated;
 grant select, insert, update, delete on public.campaigns to authenticated;
 grant select, insert, update, delete on public.campaign_tasks to authenticated;
 grant select, insert on public.campaign_participants to authenticated;
-grant select, insert, update on public.task_submissions to authenticated;
+grant select, insert on public.task_submissions to authenticated;
 grant select on public.reward_ledger to authenticated;
 grant select, insert, update on public.reward_withdrawals to authenticated;
 grant select on public.audit_logs to authenticated;
